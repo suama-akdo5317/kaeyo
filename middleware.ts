@@ -25,14 +25,23 @@ export async function middleware(request: NextRequest) {
     },
   );
 
+  // /?code=xxx が来た場合、/auth/callback へリダイレクト
+  const code = request.nextUrl.searchParams.get("code");
+  if (code && request.nextUrl.pathname === "/") {
+    const callbackUrl = new URL("/auth/callback", request.url);
+    callbackUrl.searchParams.set("code", code);
+    return NextResponse.redirect(callbackUrl);
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const isAuthPage = request.nextUrl.pathname.startsWith("/login");
   const isInvitePage = request.nextUrl.pathname.startsWith("/invite");
+  const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/callback");
 
-  if (!user && !isAuthPage && !isInvitePage) {
+  if (!user && !isAuthPage && !isInvitePage && !isAuthCallback) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   if (user && isAuthPage) {
