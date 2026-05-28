@@ -1,0 +1,70 @@
+"use client";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const { error } = isSignUp
+      ? await supabase.auth.signUp({ email, password })
+      : await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    router.push("/");
+    router.refresh();
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-8 rounded-lg shadow w-full max-w-sm space-y-4"
+      >
+        <h1 className="text-xl font-bold text-center">買い物メモ</h1>
+        <input
+          type="email"
+          placeholder="メールアドレス"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+          required
+        />
+        <input
+          type="password"
+          placeholder="パスワード"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+          required
+        />
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white rounded py-2"
+        >
+          {isSignUp ? "新規登録" : "ログイン"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsSignUp(!isSignUp)}
+          className="w-full text-sm text-gray-500 underline"
+        >
+          {isSignUp ? "ログインに戻る" : "新規登録はこちら"}
+        </button>
+      </form>
+    </div>
+  );
+}

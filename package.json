@@ -11,6 +11,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@rolldown/binding-darwin-arm64": "^1.0.3",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "next": "16.2.6",
@@ -28,6 +29,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "happy-dom": "^20.9.0",
     "jsdom": "^29.1.1",
     "supabase": "^2.101.0",
     "tailwindcss": "^4",
