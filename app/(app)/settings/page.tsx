@@ -3,28 +3,83 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getCategories, addCategory, deleteCategory } from "@/lib/category";
-import { getMyGroups, generateInviteToken } from "@/lib/group";
+import {
+  getMyGroups,
+  generateInviteToken,
+  updateGroup,
+  SELECTED_GROUP_KEY,
+} from "@/lib/group";
 import { CATEGORY_COLORS, DEFAULT_CATEGORY_COLOR } from "@/lib/categoryColors";
+import { GroupSwitcher } from "@/components/GroupSwitcher";
 import type { Category, Group } from "@/lib/types";
 
 export default function SettingsPage() {
   const supabase = createClient();
+  const [groups, setGroups] = useState<Group[]>([]);
   const [group, setGroup] = useState<Group | null>(null);
+  const [groupName, setGroupName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [nameSaved, setNameSaved] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCatName, setNewCatName] = useState("");
   const [newCatColor, setNewCatColor] = useState<string>(CATEGORY_COLORS[0]);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // 選択したグループを編集対象に切り替える（名前入力・タグ一覧も連動）。
+  const selectGroup = async (g: Group) => {
+    setGroup(g);
+    setGroupName(g.name);
+    setNameSaved(false);
+    setInviteUrl(null);
+    setCategories(await getCategories(supabase, g.id));
+  };
+
   useEffect(() => {
     async function load() {
-      const groups = await getMyGroups(supabase);
-      if (!groups || groups.length === 0) return;
-      setGroup(groups[0]);
-      setCategories(await getCategories(supabase, groups[0].id));
+      const myGroups = await getMyGroups(supabase);
+      if (!myGroups || myGroups.length === 0) return;
+      setGroups(myGroups);
+      // メイン画面と同じ選択グループを優先する。
+      const savedId =
+        typeof window !== "undefined"
+          ? localStorage.getItem(SELECTED_GROUP_KEY)
+          : null;
+      const g = myGroups.find((x) => x.id === savedId) ?? myGroups[0];
+      await selectGroup(g);
     }
     load();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSwitchGroup = async (groupId: string) => {
+    const g = groups.find((x) => x.id === groupId);
+    if (!g || g.id === group?.id) return;
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SELECTED_GROUP_KEY, g.id);
+    }
+    setError(null);
+    await selectGroup(g);
+  };
+
+  const handleSaveName = async () => {
+    if (!group) return;
+    const name = groupName.trim();
+    if (!name || name === group.name) return;
+    setError(null);
+    setSavingName(true);
+    try {
+      await updateGroup(supabase, group.id, name);
+      const updated = { ...group, name };
+      setGroup(updated);
+      setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+      setGroupName(name);
+      setNameSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   const handleAddCategory = async () => {
     if (!group || !newCatName.trim()) return;
@@ -67,6 +122,45 @@ export default function SettingsPage() {
         </Link>
         <h1 className="font-display font-bold text-[22px]">設定</h1>
       </div>
+
+      {groups.length > 1 && (
+        <section className="bg-card border border-line rounded-[18px] p-[18px] shadow-[0_12px_32px_-22px_rgba(80,50,20,.35)]">
+          <h2 className="font-display font-bold text-[15px] mb-3">
+            編集するリスト
+          </h2>
+          <GroupSwitcher
+            groups={groups}
+            currentGroupId={group?.id ?? ""}
+            onChange={handleSwitchGroup}
+          />
+        </section>
+      )}
+
+      <section className="bg-card border border-line rounded-[18px] p-[18px] shadow-[0_12px_32px_-22px_rgba(80,50,20,.35)]">
+        <h2 className="font-display font-bold text-[15px] mb-3">リスト名</h2>
+        <div className="flex gap-2">
+          <input
+            value={groupName}
+            onChange={(e) => {
+              setGroupName(e.target.value);
+              setNameSaved(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSaveName();
+            }}
+            placeholder="リストの名前"
+            className="flex-1 px-3.5 py-2.5 border-[1.5px] border-line rounded-xl text-[15px] bg-input focus:border-accent focus:bg-white focus:outline-none"
+          />
+          <button
+            onClick={handleSaveName}
+            disabled={savingName}
+            className="px-4 py-2.5 rounded-xl bg-accent text-white font-bold text-[14px] hover:bg-accent-hover transition disabled:opacity-50"
+          >
+            保存
+          </button>
+        </div>
+        {nameSaved && <p className="text-done text-sm mt-2">保存しました</p>}
+      </section>
 
       <section className="bg-card border border-line rounded-[18px] p-[18px] shadow-[0_12px_32px_-22px_rgba(80,50,20,.35)]">
         <h2 className="font-display font-bold text-[15px] mb-3">タグ</h2>
