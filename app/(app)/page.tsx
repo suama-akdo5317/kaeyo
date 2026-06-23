@@ -21,6 +21,7 @@ import { CategorySection } from "@/components/CategorySection";
 import { HistoryPanel } from "@/components/HistoryPanel";
 import { EmptyState } from "@/components/EmptyState";
 import { GroupSwitcher } from "@/components/GroupSwitcher";
+import { MainSkeleton } from "@/components/MainSkeleton";
 import { subscribeToGroupChanges } from "@/lib/realtime";
 import type { Category, Item, ItemHistory, Group } from "@/lib/types";
 
@@ -58,6 +59,7 @@ export default function MainPage() {
   const [history, setHistory] = useState<ItemHistory[]>([]);
   const [userName, setUserName] = useState("ゲスト");
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const loadGroupData = useCallback(async (g: Group) => {
     const [cats, its, hist] = await Promise.all([
@@ -97,6 +99,8 @@ export default function MainPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : JSON.stringify(err);
       setLoadError(message);
+    } finally {
+      setLoading(false);
     }
   }, [loadGroupData]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -200,11 +204,15 @@ export default function MainPage() {
               onChange={handleSwitchGroup}
             />
             <div className="flex items-center gap-2">
-              <span className="w-[30px] h-[30px] rounded-full bg-accent text-white flex items-center justify-center font-bold text-[13px] flex-none">
-                {userName.charAt(0)}
-              </span>
+              {loading ? (
+                <span className="w-[30px] h-[30px] rounded-full bg-[#e3d9c7] animate-pulse flex-none" />
+              ) : (
+                <span className="w-[30px] h-[30px] rounded-full bg-accent text-white flex items-center justify-center font-bold text-[13px] flex-none">
+                  {userName.charAt(0)}
+                </span>
+              )}
               <span className="text-[13px] text-muted-strong hidden sm:inline">
-                {userName}
+                {loading ? "" : userName}
               </span>
             </div>
             <Link
@@ -228,50 +236,56 @@ export default function MainPage() {
       </header>
 
       <main className="max-w-[1000px] mx-auto px-5 pt-6 pb-16 w-full">
-        <ItemInput
-          categories={categories}
-          history={history}
-          onAdd={handleAdd}
-          onAddCategory={handleAddCategory}
-        />
-
-        {loadError && (
-          <p className="text-[#d0594f] text-sm mb-4">{loadError}</p>
-        )}
-
-        {items.length === 0 ? (
-          <EmptyState />
+        {loading ? (
+          <MainSkeleton />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,290px),1fr))] gap-4 items-start">
-            {categories.map((cat) => {
-              const its = categorizedItems(cat.id);
-              if (its.length === 0) return null;
-              return (
-                <CategorySection
-                  key={cat.id}
-                  category={cat}
-                  items={its}
-                  onToggleItem={handleToggle}
-                  onDeleteItem={handleDelete}
-                />
-              );
-            })}
-            {uncategorized.length > 0 && (
-              <CategorySection
-                category={null}
-                items={uncategorized}
-                onToggleItem={handleToggle}
-                onDeleteItem={handleDelete}
-              />
-            )}
-          </div>
-        )}
+          <>
+            <ItemInput
+              categories={categories}
+              history={history}
+              onAdd={handleAdd}
+              onAddCategory={handleAddCategory}
+            />
 
-        <HistoryPanel
-          history={history}
-          activeItemNames={activeNames}
-          onReactivate={handleReactivate}
-        />
+            {loadError && (
+              <p className="text-[#d0594f] text-sm mb-4">{loadError}</p>
+            )}
+
+            {items.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,290px),1fr))] gap-4 items-start">
+                {categories.map((cat) => {
+                  const its = categorizedItems(cat.id);
+                  if (its.length === 0) return null;
+                  return (
+                    <CategorySection
+                      key={cat.id}
+                      category={cat}
+                      items={its}
+                      onToggleItem={handleToggle}
+                      onDeleteItem={handleDelete}
+                    />
+                  );
+                })}
+                {uncategorized.length > 0 && (
+                  <CategorySection
+                    category={null}
+                    items={uncategorized}
+                    onToggleItem={handleToggle}
+                    onDeleteItem={handleDelete}
+                  />
+                )}
+              </div>
+            )}
+
+            <HistoryPanel
+              history={history}
+              activeItemNames={activeNames}
+              onReactivate={handleReactivate}
+            />
+          </>
+        )}
       </main>
     </div>
   );
