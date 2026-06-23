@@ -1,35 +1,90 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { getItems, addItem, toggleItem, getItemHistory } from "@/lib/item";
-import { getCategories } from "@/lib/category";
-import { getMyGroups } from "@/lib/group";
+import {
+  getItems,
+  addItem,
+  toggleItem,
+  deleteItem,
+  getItemHistory,
+} from "@/lib/item";
+import {
+  getCategories,
+  addCategory,
+  seedDefaultCategories,
+} from "@/lib/category";
+import { getMyGroups, createGroup } from "@/lib/group";
 import { ItemInput } from "@/components/ItemInput";
 import { CategorySection } from "@/components/CategorySection";
 import { HistoryPanel } from "@/components/HistoryPanel";
+import { EmptyState } from "@/components/EmptyState";
 import { subscribeToGroupChanges } from "@/lib/realtime";
 import type { Category, Item, ItemHistory, Group } from "@/lib/types";
 
+const BrandIcon = ({ size = 22 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+    <path
+      d="M5 11.5h22l-2.2 14.2a2.4 2.4 0 0 1-2.37 2.05H9.57A2.4 2.4 0 0 1 7.2 25.7L5 11.5Z"
+      fill="#fff"
+      stroke="#d8593a"
+      strokeWidth="2.1"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M11 11.5 14.5 4M21 11.5 17.5 4"
+      stroke="#d8593a"
+      strokeWidth="2.1"
+      strokeLinecap="round"
+    />
+    <path
+      d="M13 16.5v6M19 16.5v6"
+      stroke="#d8593a"
+      strokeWidth="2.1"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 export default function MainPage() {
   const supabase = createClient();
+  const router = useRouter();
   const [group, setGroup] = useState<Group | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [history, setHistory] = useState<ItemHistory[]>([]);
+  const [userName, setUserName] = useState("ゲスト");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const groups = await getMyGroups(supabase);
-    if (!groups || groups.length === 0) return;
-    const g = groups[0];
-    setGroup(g);
-    const [cats, its, hist] = await Promise.all([
-      getCategories(supabase, g.id),
-      getItems(supabase, g.id),
-      getItemHistory(supabase, g.id),
-    ]);
-    setCategories(cats);
-    setItems(its);
-    setHistory(hist);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user?.email) setUserName(user.email.split("@")[0] || "ゲスト");
+
+      let groups = await getMyGroups(supabase);
+      if (!groups || groups.length === 0) {
+        if (!user) return;
+        const newGroup = await createGroup(supabase, "マイリスト");
+        await seedDefaultCategories(supabase, newGroup.id);
+        groups = [newGroup];
+      }
+      const g = groups[0];
+      setGroup(g);
+      const [cats, its, hist] = await Promise.all([
+        getCategories(supabase, g.id),
+        getItems(supabase, g.id),
+        getItemHistory(supabase, g.id),
+      ]);
+      setCategories(cats);
+      setItems(its);
+      setHistory(hist);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : JSON.stringify(err);
+      setLoadError(message);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -41,8 +96,14 @@ export default function MainPage() {
     return subscribeToGroupChanges(
       supabase,
       group.id,
-      () => getItems(supabase, group.id).then(setItems),
-      () => getCategories(supabase, group.id).then(setCategories),
+      () =>
+        getItems(supabase, group.id)
+          .then(setItems)
+          .catch(() => {}),
+      () =>
+        getCategories(supabase, group.id)
+          .then(setCategories)
+          .catch(() => {}),
     );
   }, [group]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -52,11 +113,22 @@ export default function MainPage() {
     await load();
   };
 
+  const handleAddCategory = async (name: string, color: string) => {
+    if (!group) return;
+    await addCategory(supabase, group.id, name, categories.length, color);
+    setCategories(await getCategories(supabase, group.id));
+  };
+
   const handleToggle = async (id: string, isActive: boolean) => {
     await toggleItem(supabase, id, isActive);
     setItems((prev) =>
       prev.map((i) => (i.id === id ? { ...i, is_active: isActive } : i)),
     );
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteItem(supabase, id);
+    setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
   const handleReactivate = async (name: string) => {
@@ -70,39 +142,95 @@ export default function MainPage() {
   );
   const categorizedItems = (catId: string | null) =>
     items.filter((i) => i.category_id === catId);
+  const uncategorized = categorizedItems(null);
 
   return (
-    <div className="max-w-md mx-auto min-h-screen flex flex-col">
-      <header className="bg-blue-500 text-white px-4 py-3 flex justify-between items-center">
-        <span className="font-bold">{group?.name ?? "読み込み中..."}</span>
+    <div className="flex flex-col min-h-screen">
+      <header className="sticky top-0 z-20 bg-[rgba(244,238,226,.86)] backdrop-blur-[10px] border-b border-line">
+        <div className="max-w-[1000px] mx-auto px-5 py-[13px] flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="w-9 h-9 rounded-[11px] bg-[#fbe7df] flex items-center justify-center flex-none">
+              <BrandIcon />
+            </span>
+            <span className="font-display font-bold text-[19px]">
+              かいものメモ
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="w-[30px] h-[30px] rounded-full bg-accent text-white flex items-center justify-center font-bold text-[13px] flex-none">
+                {userName.charAt(0)}
+              </span>
+              <span className="text-[13px] text-muted-strong hidden sm:inline">
+                {userName}
+              </span>
+            </div>
+            <Link
+              href="/settings"
+              className="text-muted-strong opacity-80 hover:opacity-100 text-xl leading-none"
+              aria-label="設定"
+            >
+              ⚙
+            </Link>
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push("/login");
+              }}
+              className="px-[13px] py-[7px] border-[1.5px] border-[#e3d9c7] rounded-[10px] text-muted-strong text-[13px] font-medium hover:bg-[#f1e9da] transition"
+            >
+              ログアウト
+            </button>
+          </div>
+        </div>
       </header>
-      <ItemInput categories={categories} onAdd={handleAdd} />
-      <main className="flex-1 overflow-y-auto p-2">
-        {categories.map((cat) => {
-          const its = categorizedItems(cat.id);
-          if (its.length === 0) return null;
-          return (
-            <CategorySection
-              key={cat.id}
-              category={cat}
-              items={its}
-              onToggleItem={handleToggle}
-            />
-          );
-        })}
-        {categorizedItems(null).length > 0 && (
-          <CategorySection
-            category={null}
-            items={categorizedItems(null)}
-            onToggleItem={handleToggle}
-          />
+
+      <main className="max-w-[1000px] mx-auto px-5 pt-6 pb-16 w-full">
+        <ItemInput
+          categories={categories}
+          history={history}
+          onAdd={handleAdd}
+          onAddCategory={handleAddCategory}
+        />
+
+        {loadError && (
+          <p className="text-[#d0594f] text-sm mb-4">{loadError}</p>
         )}
+
+        {items.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4 items-start">
+            {categories.map((cat) => {
+              const its = categorizedItems(cat.id);
+              if (its.length === 0) return null;
+              return (
+                <CategorySection
+                  key={cat.id}
+                  category={cat}
+                  items={its}
+                  onToggleItem={handleToggle}
+                  onDeleteItem={handleDelete}
+                />
+              );
+            })}
+            {uncategorized.length > 0 && (
+              <CategorySection
+                category={null}
+                items={uncategorized}
+                onToggleItem={handleToggle}
+                onDeleteItem={handleDelete}
+              />
+            )}
+          </div>
+        )}
+
+        <HistoryPanel
+          history={history}
+          activeItemNames={activeNames}
+          onReactivate={handleReactivate}
+        />
       </main>
-      <HistoryPanel
-        history={history}
-        activeItemNames={activeNames}
-        onReactivate={handleReactivate}
-      />
     </div>
   );
 }

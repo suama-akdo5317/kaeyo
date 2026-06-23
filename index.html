@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>かいものメモ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    color: #2d2823;
+    background: #f4eee2;
+    background-image:
+      radial-gradient(circle at 12% 0%, #fbf2e4 0, transparent 45%),
+      radial-gradient(circle at 90% 100%, #f6ece0 0, transparent 40%);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  input, button { font-family: inherit; }
+  input::placeholder { color: #bcae99; }
+  input:focus { border-color: #d8593a !important; background: #fff !important; outline: none; }
+  button { cursor: pointer; }
+
+  /* ── Screens ── */
+  .screen { display: none; }
+  .screen.active { display: flex; }
+
+  /* ── Auth screens ── */
+  #screen-login, #screen-signup {
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .auth-card {
+    width: 100%;
+    max-width: 380px;
+    background: #fffdf8;
+    border: 1px solid #e8dfce;
+    border-radius: 22px;
+    padding: 38px 32px;
+    box-shadow: 0 22px 56px -26px rgba(80,50,20,.4);
+  }
+  .auth-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .auth-logo-icon {
+    width: 64px; height: 64px;
+    border-radius: 20px;
+    background: #fbe7df;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .auth-logo-text {
+    text-align: center;
+  }
+  .auth-logo-title {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-weight: 700;
+    font-size: 25px;
+    letter-spacing: .04em;
+  }
+  .auth-logo-sub {
+    font-size: 13px;
+    color: #948a7c;
+    margin-top: 5px;
+  }
+  .auth-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #6f665a;
+    margin-bottom: 6px;
+  }
+  .auth-input {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1.5px solid #e8dfce;
+    border-radius: 12px;
+    font-size: 15px;
+    background: #fbf7ef;
+    margin-bottom: 15px;
+    transition: .15s;
+  }
+  .auth-input.mb-sm { margin-bottom: 14px; }
+  .auth-input.mb-last { margin-bottom: 6px; }
+  .auth-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: #d8593a;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    box-shadow: 0 10px 22px -8px rgba(216,89,58,.75);
+    transition: .15s;
+  }
+  .auth-btn:hover { background: #c44e31; }
+  .auth-btn.mt-lg { margin-top: 14px; }
+  .auth-footer {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 13px;
+    color: #948a7c;
+  }
+  .auth-link {
+    color: #d8593a;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .auth-error {
+    font-size: 12.5px;
+    color: #d0594f;
+    margin-top: 8px;
+    font-weight: 500;
+    display: none;
+  }
+  .auth-error.visible { display: block; }
+
+  /* ── App screen ── */
+  #screen-app {
+    display: none;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  #screen-app.active { display: flex; }
+
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(244,238,226,.86);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid #e8dfce;
+  }
+  .app-header-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 13px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .app-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .app-header-icon {
+    width: 36px; height: 36px;
+    border-radius: 11px;
+    background: #fbe7df;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .app-header-title {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-weight: 700;
+    font-size: 19px;
+  }
+  .app-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .user-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: #d8593a;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .user-name {
+    font-size: 13px;
+    color: #6f665a;
+  }
+  .logout-btn {
+    padding: 7px 13px;
+    border: 1.5px solid #e3d9c7;
+    border-radius: 10px;
+    background: transparent;
+    color: #6f665a;
+    font-size: 13px;
+    font-weight: 500;
+    transition: .15s;
+  }
+  .logout-btn:hover { background: #f1e9da; }
+
+  /* ── Main content ── */
+  .app-main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px 20px 64px;
+    width: 100%;
+  }
+
+  /* Input card */
+  .input-card {
+    background: #fffdf8;
+    border: 1px solid #e8dfce;
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 12px 32px -22px rgba(80,50,20,.35);
+    margin-bottom: 26px;
+  }
+  .input-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .input-name-wrap {
+    position: relative;
+    flex: 2 1 220px;
+    min-width: 0;
+  }
+  .item-input {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1.5px solid #e8dfce;
+    border-radius: 12px;
+    font-size: 15px;
+    background: #fbf7ef;
+    transition: .15s;
+  }
+  .tag-input {
+    flex: 1 1 130px;
+    min-width: 0;
+    padding: 13px 14px;
+    border: 1.5px solid #e8dfce;
+    border-radius: 12px;
+    font-size: 15px;
+    background: #fbf7ef;
+    transition: .15s;
+  }
+  .add-btn {
+    flex: 0 0 auto;
+    padding: 13px 22px;
+    border: none;
+    border-radius: 12px;
+    background: #d8593a;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 9px 20px -8px rgba(216,89,58,.7);
+    transition: .15s;
+    white-space: nowrap;
+  }
+  .add-btn:hover { background: #c44e31; }
+
+  /* Suggest dropdown */
+  .suggest-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: #fff;
+    border: 1px solid #e8dfce;
+    border-radius: 13px;
+    box-shadow: 0 16px 36px -16px rgba(80,50,20,.45);
+    overflow: hidden;
+    z-index: 30;
+    display: none;
+  }
+  .suggest-dropdown.visible { display: block; }
+  .suggest-header {
+    padding: 7px 14px 5px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: #bcae99;
+  }
+  .suggest-item {
+    padding: 10px 14px;
+    font-size: 14.5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    transition: background .1s;
+  }
+  .suggest-item:hover { background: #fdf6ee; }
+
+  /* Tag chips */
+  .tag-chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 13px;
+    align-items: center;
+  }
+  .tag-chips-label {
+    font-size: 12px;
+    color: #948a7c;
+    margin-right: 2px;
+    white-space: nowrap;
+    flex: none;
+  }
+  .tag-chip {
+    font-size: 12.5px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 500;
+    border: 1.5px solid #e8dfce;
+    background: #fff;
+    color: #6f665a;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .tag-chip:hover { border-color: #d7c9b3; }
+
+  /* Groups grid */
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+  .group-card {
+    background: #fffdf8;
+    border: 1px solid #e8dfce;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .group-header {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 13px 16px;
+    border-bottom: 1px solid #f1e9da;
+  }
+  .group-dot {
+    flex: 0 0 auto;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .group-name {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .group-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: #948a7c;
+    font-variant-numeric: tabular-nums;
+  }
+  .item-row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 11px 16px;
+    border-bottom: 1px solid #f5efe3;
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-check {
+    flex: 0 0 auto;
+    width: 22px; height: 22px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 2px solid #d7cab4;
+    background: transparent;
+    transition: all .15s;
+    padding: 0;
+  }
+  .item-check.done {
+    border: none;
+    background: #4f9d69;
+  }
+  .item-name {
+    flex: 1 1 auto;
+    font-size: 15px;
+    cursor: pointer;
+    color: #2d2823;
+    transition: color .15s;
+  }
+  .item-name.done {
+    color: #b8ad9c;
+    text-decoration: line-through;
+  }
+  .item-delete {
+    margin-left: auto;
+    color: #cdbfa9;
+    cursor: pointer;
+    font-size: 19px;
+    line-height: 1;
+    padding: 0 3px;
+    background: none;
+    border: none;
+    transition: color .15s;
+  }
+  .item-delete:hover { color: #a0917e; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 64px 20px;
+    color: #948a7c;
+    display: none;
+  }
+  .empty-state.visible { display: block; }
+  .empty-title {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: #6f665a;
+    margin-top: 12px;
+  }
+  .empty-sub {
+    font-size: 13px;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Login ── -->
+<div id="screen-login" class="screen active">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
+          <path d="M5 11.5h22l-2.2 14.2a2.4 2.4 0 0 1-2.37 2.05H9.57A2.4 2.4 0 0 1 7.2 25.7L5 11.5Z" fill="#fff" stroke="#d8593a" stroke-width="2.1" stroke-linejoin="round"/>
+          <path d="M11 11.5 14.5 4M21 11.5 17.5 4" stroke="#d8593a" stroke-width="2.1" stroke-linecap="round"/>
+          <path d="M13 16.5v6M19 16.5v6" stroke="#d8593a" stroke-width="2.1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="auth-logo-text">
+        <div class="auth-logo-title">かいものメモ</div>
+        <div class="auth-logo-sub">買うものを、わすれない。</div>
+      </div>
+    </div>
+    <label class="auth-label">メールアドレス</label>
+    <input id="login-email" class="auth-input" type="email" placeholder="you@example.com">
+    <label class="auth-label">パスワード</label>
+    <input id="login-password" class="auth-input mb-last" type="password" placeholder="••••••••">
+    <button id="login-btn" class="auth-btn">ログイン</button>
+    <div class="auth-footer">
+      アカウントがない？&nbsp;<span id="go-signup" class="auth-link">新規登録</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Sign Up ── -->
+<div id="screen-signup" class="screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
+          <path d="M5 11.5h22l-2.2 14.2a2.4 2.4 0 0 1-2.37 2.05H9.57A2.4 2.4 0 0 1 7.2 25.7L5 11.5Z" fill="#fff" stroke="#d8593a" stroke-width="2.1" stroke-linejoin="round"/>
+          <path d="M11 11.5 14.5 4M21 11.5 17.5 4" stroke="#d8593a" stroke-width="2.1" stroke-linecap="round"/>
+          <path d="M13 16.5v6M19 16.5v6" stroke="#d8593a" stroke-width="2.1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="auth-logo-text">
+        <div class="auth-logo-title" style="font-size:23px;">アカウント作成</div>
+        <div class="auth-logo-sub">はじめましょう。</div>
+      </div>
+    </div>
+    <label class="auth-label">おなまえ</label>
+    <input id="su-name" class="auth-input auth-input mb-sm" type="text" placeholder="やまだ たろう">
+    <label class="auth-label">メールアドレス</label>
+    <input id="su-email" class="auth-input mb-sm" type="email" placeholder="you@example.com">
+    <label class="auth-label">パスワード</label>
+    <input id="su-password" class="auth-input mb-sm" type="password" placeholder="8文字以上">
+    <label class="auth-label">パスワード（確認）</label>
+    <input id="su-confirm" class="auth-input mb-last" type="password" placeholder="もう一度入力">
+    <div id="su-error" class="auth-error"></div>
+    <button id="signup-btn" class="auth-btn mt-lg">登録してはじめる</button>
+    <div class="auth-footer">
+      すでにアカウントをお持ち？&nbsp;<span id="go-login" class="auth-link">ログイン</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="screen-app" class="screen">
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="app-header-brand">
+        <div class="app-header-icon">
+          <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+            <path d="M5 11.5h22l-2.2 14.2a2.4 2.4 0 0 1-2.37 2.05H9.57A2.4 2.4 0 0 1 7.2 25.7L5 11.5Z" fill="#fff" stroke="#d8593a" stroke-width="2.1" stroke-linejoin="round"/>
+            <path d="M11 11.5 14.5 4M21 11.5 17.5 4" stroke="#d8593a" stroke-width="2.1" stroke-linecap="round"/>
+            <path d="M13 16.5v6M19 16.5v6" stroke="#d8593a" stroke-width="2.1" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="app-header-title">かいものメモ</span>
+      </div>
+      <div class="app-header-right">
+        <div class="user-info">
+          <div id="user-avatar" class="user-avatar"></div>
+          <span id="user-name" class="user-name"></span>
+        </div>
+        <button id="logout-btn" class="logout-btn">ログアウト</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="input-card">
+      <div class="input-row">
+        <div class="input-name-wrap">
+          <input id="name-input" class="item-input" type="text" placeholder="牛乳、たまご、トマト…">
+          <div id="suggest-dropdown" class="suggest-dropdown">
+            <div class="suggest-header">これまでの入力</div>
+            <div id="suggest-list"></div>
+          </div>
+        </div>
+        <input id="tag-input" class="tag-input" type="text" placeholder="タグ（例: 野菜）">
+        <button id="add-btn" class="add-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+          </svg>
+          追加
+        </button>
+      </div>
+      <div class="tag-chips-row">
+        <span class="tag-chips-label">タグ:</span>
+        <div id="tag-chips"></div>
+      </div>
+    </div>
+
+    <div id="groups-container" class="groups-grid"></div>
+
+    <div id="empty-state" class="empty-state">
+      <svg width="56" height="56" viewBox="0 0 32 32" fill="none" style="opacity:.5">
+        <path d="M5 11.5h22l-2.2 14.2a2.4 2.4 0 0 1-2.37 2.05H9.57A2.4 2.4 0 0 1 7.2 25.7L5 11.5Z" fill="none" stroke="#b7a890" stroke-width="2.1" stroke-linejoin="round"/>
+        <path d="M11 11.5 14.5 4M21 11.5 17.5 4" stroke="#b7a890" stroke-width="2.1" stroke-linecap="round"/>
+      </svg>
+      <div class="empty-title">リストはまだ空っぽです</div>
+      <div class="empty-sub">上の入力欄から買うものを追加しましょう。</div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── State ──
+const TAG_COLORS = {
+  '野菜': '#5aa469', '果物': '#e0902f', '肉・魚': '#d0594f', '飲み物': '#4a90c2',
+  '調味料': '#b07a3a', 'お菓子': '#b06bb0', '日用品': '#c98a3a', 'その他': '#948a7c',
+};
+const TAG_ORDER = ['野菜', '果物', '肉・魚', '飲み物', '調味料', 'お菓子', '日用品', 'その他'];
+const PRESET_TAGS = ['野菜', '果物', '肉・魚', '飲み物', '調味料', 'お菓子', '日用品'];
+
+let state = {
+  userName: 'ゲスト',
+  items: [
+    { id: 1, name: '牛乳', tag: '飲み物', done: false },
+    { id: 2, name: 'たまご', tag: 'その他', done: false },
+    { id: 3, name: 'トマト', tag: '野菜', done: false },
+    { id: 4, name: 'きゅうり', tag: '野菜', done: false },
+    { id: 5, name: '鶏むね肉', tag: '肉・魚', done: false },
+    { id: 6, name: '食パン', tag: 'その他', done: true },
+    { id: 7, name: 'ヨーグルト', tag: '飲み物', done: false },
+    { id: 8, name: 'りんご', tag: '果物', done: false },
+    { id: 9, name: '洗剤', tag: '日用品', done: false },
+  ],
+  history: ['牛乳','たまご','食パン','トマト','きゅうり','玉ねぎ','にんじん','じゃがいも','キャベツ','なす','鶏むね肉','豚バラ肉','牛こま肉','鮭','まぐろ','ヨーグルト','チーズ','バター','納豆','豆腐','醤油','味噌','砂糖','塩','こしょう','りんご','バナナ','みかん','いちご','コーヒー','緑茶','オレンジジュース','ビール','ティッシュ','トイレットペーパー','洗剤','食器用洗剤','シャンプー','歯みがき粉','ゴミ袋','ポテトチップス','チョコレート','クッキー','アイス'],
+  activeTag: '',
+  nameFocused: false,
+};
+
+// ── DOM refs ──
+const screens = {
+  login: document.getElementById('screen-login'),
+  signup: document.getElementById('screen-signup'),
+  app: document.getElementById('screen-app'),
+};
+
+function showScreen(name) {
+  Object.entries(screens).forEach(([k, el]) => {
+    el.classList.toggle('active', k === name);
+  });
+}
+
+// ── Login ──
+document.getElementById('login-btn').addEventListener('click', () => {
+  const email = document.getElementById('login-email').value.trim();
+  state.userName = email ? (email.split('@')[0] || 'ゲスト') : 'ゲスト';
+  enterApp();
+});
+document.getElementById('login-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-btn').click(); });
+document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-btn').click(); });
+document.getElementById('go-signup').addEventListener('click', () => showScreen('signup'));
+
+// ── Signup ──
+document.getElementById('signup-btn').addEventListener('click', () => {
+  const name = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const pw = document.getElementById('su-password').value;
+  const confirm = document.getElementById('su-confirm').value;
+  const errEl = document.getElementById('su-error');
+
+  if (!name || !email || !pw) {
+    errEl.textContent = 'すべての項目を入力してください。';
+    errEl.classList.add('visible');
+    return;
+  }
+  if (pw.length < 8) {
+    errEl.textContent = 'パスワードは8文字以上にしてください。';
+    errEl.classList.add('visible');
+    return;
+  }
+  if (pw !== confirm) {
+    errEl.textContent = 'パスワードが一致しません。';
+    errEl.classList.add('visible');
+    return;
+  }
+  errEl.classList.remove('visible');
+  state.userName = name;
+  enterApp();
+});
+document.getElementById('go-login').addEventListener('click', () => {
+  document.getElementById('su-error').classList.remove('visible');
+  showScreen('login');
+});
+['su-name','su-email','su-password','su-confirm'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('signup-btn').click();
+  });
+});
+
+function enterApp() {
+  document.getElementById('user-name').textContent = state.userName;
+  document.getElementById('user-avatar').textContent = state.userName.charAt(0);
+  showScreen('app');
+  render();
+}
+
+// ── Logout ──
+document.getElementById('logout-btn').addEventListener('click', () => {
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  showScreen('login');
+});
+
+// ── Item input ──
+const nameInput = document.getElementById('name-input');
+const tagInputEl = document.getElementById('tag-input');
+const suggestDropdown = document.getElementById('suggest-dropdown');
+const suggestList = document.getElementById('suggest-list');
+
+nameInput.addEventListener('input', () => {
+  state.nameFocused = true;
+  renderSuggest();
+});
+nameInput.addEventListener('focus', () => {
+  state.nameFocused = true;
+  renderSuggest();
+});
+nameInput.addEventListener('blur', () => {
+  setTimeout(() => {
+    state.nameFocused = false;
+    suggestDropdown.classList.remove('visible');
+  }, 130);
+});
+nameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addItem(); }
+});
+tagInputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addItem(); }
+});
+document.getElementById('add-btn').addEventListener('click', addItem);
+
+function renderSuggest() {
+  const q = nameInput.value.trim();
+  if (!q || !state.nameFocused) {
+    suggestDropdown.classList.remove('visible');
+    return;
+  }
+  const matches = state.history
+    .filter(h => h.includes(q) && h !== q)
+    .slice(0, 6);
+  if (matches.length === 0) {
+    suggestDropdown.classList.remove('visible');
+    return;
+  }
+  suggestList.innerHTML = matches.map(name => `
+    <div class="suggest-item" data-name="${escapeAttr(name)}">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke="#c3b59f" stroke-width="2"/>
+        <path d="M12 7.5v5l3 1.8" stroke="#c3b59f" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      ${escapeHtml(name)}
+    </div>
+  `).join('');
+  suggestDropdown.classList.add('visible');
+}
+
+suggestList.addEventListener('mousedown', e => {
+  const item = e.target.closest('.suggest-item');
+  if (!item) return;
+  nameInput.value = item.dataset.name;
+  state.nameFocused = false;
+  suggestDropdown.classList.remove('visible');
+});
+
+// ── Tag chips ──
+function renderTagChips() {
+  const container = document.getElementById('tag-chips');
+  container.innerHTML = PRESET_TAGS.map(t => {
+    const active = state.activeTag === t;
+    const color = TAG_COLORS[t] || '#d8593a';
+    const style = active
+      ? `border-color:${color};background:${color};color:#fff;`
+      : '';
+    return `<button class="tag-chip" data-tag="${escapeAttr(t)}" style="${style}">${escapeHtml(t)}</button>`;
+  }).join('');
+}
+
+document.getElementById('tag-chips').addEventListener('click', e => {
+  const chip = e.target.closest('.tag-chip');
+  if (!chip) return;
+  const tag = chip.dataset.tag;
+  state.activeTag = state.activeTag === tag ? '' : tag;
+  tagInputEl.value = state.activeTag;
+  renderTagChips();
+});
+
+// ── Add item ──
+function addItem() {
+  const name = nameInput.value.trim();
+  if (!name) return;
+  const tag = tagInputEl.value.trim() || 'その他';
+  state.items.push({ id: Date.now() + Math.random(), name, tag, done: false });
+  if (!state.history.includes(name)) state.history.unshift(name);
+  nameInput.value = '';
+  tagInputEl.value = '';
+  state.activeTag = '';
+  state.nameFocused = false;
+  suggestDropdown.classList.remove('visible');
+  render();
+}
+
+// ── Toggle / Delete ──
+function toggleItem(id) {
+  state.items = state.items.map(x => x.id === id ? { ...x, done: !x.done } : x);
+  render();
+}
+function deleteItem(id) {
+  state.items = state.items.filter(x => x.id !== id);
+  render();
+}
+
+// ── Render groups ──
+function render() {
+  renderTagChips();
+  const container = document.getElementById('groups-container');
+  const emptyState = document.getElementById('empty-state');
+
+  if (state.items.length === 0) {
+    container.innerHTML = '';
+    emptyState.classList.add('visible');
+    return;
+  }
+  emptyState.classList.remove('visible');
+
+  // Group by tag
+  const byTag = {};
+  state.items.forEach(it => {
+    (byTag[it.tag] = byTag[it.tag] || []).push(it);
+  });
+  const tags = Object.keys(byTag).sort((a, b) => {
+    const ia = TAG_ORDER.indexOf(a), ib = TAG_ORDER.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+
+  container.innerHTML = tags.map(tag => {
+    const list = byTag[tag].slice().sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0));
+    const remaining = list.filter(x => !x.done).length;
+    const color = TAG_COLORS[tag] || '#948a7c';
+    const itemsHtml = list.map(it => `
+      <div class="item-row">
+        <button class="item-check ${it.done ? 'done' : ''}" data-id="${it.id}" data-action="toggle">
+          ${it.done ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>` : ''}
+        </button>
+        <span class="item-name ${it.done ? 'done' : ''}" data-id="${it.id}" data-action="toggle">${escapeHtml(it.name)}</span>
+        <button class="item-delete" data-id="${it.id}" data-action="delete">×</button>
+      </div>
+    `).join('');
+    return `
+      <div class="group-card">
+        <div class="group-header">
+          <span class="group-dot" style="background:${color}"></span>
+          <span class="group-name">${escapeHtml(tag)}</span>
+          <span class="group-count">残り ${remaining} / ${list.length}</span>
+        </div>
+        <div>${itemsHtml}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Event delegation for items
+document.getElementById('groups-container').addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const id = Number(el.dataset.id);
+  if (el.dataset.action === 'toggle') toggleItem(id);
+  else if (el.dataset.action === 'delete') deleteItem(id);
+});
+
+// ── Helpers ──
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escapeAttr(s) {
+  return String(s).replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

@@ -1,47 +1,89 @@
 "use client";
 import type { Category, Item } from "@/lib/types";
+import { DEFAULT_CATEGORY_COLOR } from "@/lib/categoryColors";
 
 type Props = {
   category: Category | null;
   items: Item[];
   onToggleItem: (id: string, isActive: boolean) => void;
+  onDeleteItem: (id: string) => void;
 };
 
-export function CategorySection({ category, items, onToggleItem }: Props) {
+export function CategorySection({
+  category,
+  items,
+  onToggleItem,
+  onDeleteItem,
+}: Props) {
+  // 未完了を上に、完了を下に
+  const sorted = [...items].sort(
+    (a, b) => (a.is_active ? 0 : 1) - (b.is_active ? 0 : 1),
+  );
+  const remaining = items.filter((i) => i.is_active).length;
+  const color = category?.color ?? DEFAULT_CATEGORY_COLOR;
+  const name = category?.name ?? "その他";
+
   return (
-    <div className="mb-4">
-      {category && (
-        <h2 className="text-sm font-semibold text-gray-500 px-2 mb-1">
-          {category.name}
-        </h2>
-      )}
-      <ul className="space-y-1">
-        {items.map((item) => (
-          <li key={item.id}>
+    <div className="bg-card border border-line rounded-2xl overflow-hidden">
+      <div className="flex items-center gap-[9px] px-4 py-[13px] border-b border-[#f1e9da]">
+        <span
+          className="flex-none w-2.5 h-2.5 rounded-full"
+          style={{ background: color }}
+        />
+        <span className="font-display font-bold text-[15px]">{name}</span>
+        <span className="ml-auto text-[12px] text-muted tabular-nums">
+          残り {remaining} / {items.length}
+        </span>
+      </div>
+      <div>
+        {sorted.map((item) => (
+          <div
+            key={item.id}
+            className="flex items-center gap-[11px] px-4 py-[11px] border-b border-[#f5efe3] last:border-b-0"
+          >
             <button
+              type="button"
               onClick={() => onToggleItem(item.id, !item.is_active)}
-              className={`w-full text-left px-3 py-2 rounded flex items-center gap-2 ${
+              className={`flex-none w-[22px] h-[22px] rounded-[7px] flex items-center justify-center transition-all ${
                 item.is_active
-                  ? "bg-white"
-                  : "bg-gray-50 text-gray-400 line-through"
+                  ? "border-2 border-[#d7cab4] bg-transparent"
+                  : "border-0 bg-done"
+              }`}
+              aria-label="完了切り替え"
+            >
+              {!item.is_active && (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M5 13l4 4L19 7"
+                    stroke="#fff"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </button>
+            <span
+              onClick={() => onToggleItem(item.id, !item.is_active)}
+              className={`flex-1 text-[15px] cursor-pointer transition-colors ${
+                item.is_active
+                  ? "text-foreground"
+                  : "text-[#b8ad9c] line-through"
               }`}
             >
-              <span
-                className={`w-4 h-4 border-2 rounded flex-shrink-0 flex items-center justify-center ${
-                  item.is_active
-                    ? "border-gray-300"
-                    : "border-gray-300 bg-gray-300"
-                }`}
-              >
-                {!item.is_active && (
-                  <span className="text-white text-xs">✓</span>
-                )}
-              </span>
               {item.name}
+            </span>
+            <button
+              type="button"
+              onClick={() => onDeleteItem(item.id)}
+              className="ml-auto text-[#cdbfa9] hover:text-[#a0917e] text-[19px] leading-none px-[3px] transition-colors"
+              aria-label="削除"
+            >
+              ×
             </button>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
