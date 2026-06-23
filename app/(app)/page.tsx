@@ -20,8 +20,11 @@ import { ItemInput } from "@/components/ItemInput";
 import { CategorySection } from "@/components/CategorySection";
 import { HistoryPanel } from "@/components/HistoryPanel";
 import { EmptyState } from "@/components/EmptyState";
+import { GroupSwitcher } from "@/components/GroupSwitcher";
 import { subscribeToGroupChanges } from "@/lib/realtime";
 import type { Category, Item, ItemHistory, Group } from "@/lib/types";
+
+const SELECTED_GROUP_KEY = "kaeyo:selectedGroupId";
 
 const BrandIcon = ({ size = 22 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
@@ -50,12 +53,24 @@ const BrandIcon = ({ size = 22 }: { size?: number }) => (
 export default function MainPage() {
   const supabase = createClient();
   const router = useRouter();
+  const [groups, setGroups] = useState<Group[]>([]);
   const [group, setGroup] = useState<Group | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [history, setHistory] = useState<ItemHistory[]>([]);
   const [userName, setUserName] = useState("ゲスト");
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const loadGroupData = useCallback(async (g: Group) => {
+    const [cats, its, hist] = await Promise.all([
+      getCategories(supabase, g.id),
+      getItems(supabase, g.id),
+      getItemHistory(supabase, g.id),
+    ]);
+    setCategories(cats);
+    setItems(its);
+    setHistory(hist);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = useCallback(async () => {
     try {
@@ -64,28 +79,43 @@ export default function MainPage() {
       } = await supabase.auth.getUser();
       if (user?.email) setUserName(user.email.split("@")[0] || "ゲスト");
 
-      let groups = await getMyGroups(supabase);
-      if (!groups || groups.length === 0) {
+      let myGroups = await getMyGroups(supabase);
+      if (!myGroups || myGroups.length === 0) {
         if (!user) return;
         const newGroup = await createGroup(supabase, "マイリスト");
         await seedDefaultCategories(supabase, newGroup.id);
-        groups = [newGroup];
+        myGroups = [newGroup];
       }
-      const g = groups[0];
+      setGroups(myGroups);
+
+      // localStorage に保存された選択グループを優先（招待参加直後の表示に対応）
+      const savedId =
+        typeof window !== "undefined"
+          ? localStorage.getItem(SELECTED_GROUP_KEY)
+          : null;
+      const g = myGroups.find((x) => x.id === savedId) ?? myGroups[0];
       setGroup(g);
-      const [cats, its, hist] = await Promise.all([
-        getCategories(supabase, g.id),
-        getItems(supabase, g.id),
-        getItemHistory(supabase, g.id),
-      ]);
-      setCategories(cats);
-      setItems(its);
-      setHistory(hist);
+      await loadGroupData(g);
     } catch (err) {
       const message = err instanceof Error ? err.message : JSON.stringify(err);
       setLoadError(message);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadGroupData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSwitchGroup = async (groupId: string) => {
+    const g = groups.find((x) => x.id === groupId);
+    if (!g || g.id === group?.id) return;
+    setGroup(g);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SELECTED_GROUP_KEY, g.id);
+    }
+    try {
+      await loadGroupData(g);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : JSON.stringify(err);
+      setLoadError(message);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -157,6 +187,11 @@ export default function MainPage() {
             </span>
           </div>
           <div className="flex items-center gap-3">
+            <GroupSwitcher
+              groups={groups}
+              currentGroupId={group?.id ?? ""}
+              onChange={handleSwitchGroup}
+            />
             <div className="flex items-center gap-2">
               <span className="w-[30px] h-[30px] rounded-full bg-accent text-white flex items-center justify-center font-bold text-[13px] flex-none">
                 {userName.charAt(0)}
