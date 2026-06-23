@@ -1,9 +1,17 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Mode = "login" | "signup" | "forgot";
+
+// オープンリダイレクト防止: 自サイト内の相対パスのみ許可する
+function safeRedirect(value: string | null): string {
+  if (value && value.startsWith("/") && !value.startsWith("//")) {
+    return value;
+  }
+  return "/";
+}
 
 function toJapaneseError(message: string): string {
   if (message.includes("Invalid login credentials"))
@@ -23,7 +31,7 @@ function toJapaneseError(message: string): string {
   return message;
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +39,8 @@ export default function LoginPage() {
   const [mode, setMode] = useState<Mode>("login");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = safeRedirect(searchParams.get("redirect"));
   const supabase = createClient();
 
   const switchMode = (next: Mode) => {
@@ -73,7 +83,7 @@ export default function LoginPage() {
           );
           return;
         }
-        router.push("/");
+        router.push(redirectTo);
         router.refresh();
         return;
       }
@@ -87,7 +97,7 @@ export default function LoginPage() {
         setError(toJapaneseError(error.message));
         return;
       }
-      router.push("/");
+      router.push(redirectTo);
       router.refresh();
     } finally {
       setLoading(false);
@@ -225,5 +235,13 @@ export default function LoginPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <LoginForm />
+    </Suspense>
   );
 }

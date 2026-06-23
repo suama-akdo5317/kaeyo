@@ -12,6 +12,7 @@ vi.mock("@/lib/supabase/client", () => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 test("メールとパスワードの入力フィールドが表示される", () => {
