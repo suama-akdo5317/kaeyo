@@ -4,12 +4,16 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { decodeInviteToken } from "@/lib/group";
 
+// app/(app)/page.tsx の SELECTED_GROUP_KEY と一致させること
+const SELECTED_GROUP_KEY = "kaeyo:selectedGroupId";
+
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function acceptInvite() {
@@ -22,19 +26,38 @@ export default function InvitePage() {
         return;
       }
 
+      let groupId: string;
       try {
-        const { groupId } = decodeInviteToken(token);
-        await supabase
-          .from("group_members")
-          .upsert(
-            { group_id: groupId, user_id: user.id, role: "member" },
-            { onConflict: "group_id,user_id" },
-          );
-        setStatus("success");
-        setTimeout(() => router.push("/"), 1500);
-      } catch {
+        ({ groupId } = decodeInviteToken(token));
+      } catch (err) {
+        console.error("招待トークンのデコードに失敗しました", err);
+        setErrorMessage("招待リンクが正しくありません。");
         setStatus("error");
+        return;
       }
+
+      // ignoreDuplicates: true で既存メンバー（owner 含む）の roleを上書きしない
+      const { error } = await supabase
+        .from("group_members")
+        .upsert(
+          { group_id: groupId, user_id: user.id, role: "member" },
+          { onConflict: "group_id,user_id", ignoreDuplicates: true },
+        );
+      if (error) {
+        console.error("グループ参加に失敗しました", error);
+        setErrorMessage(
+          "グループへの参加に失敗しました。時間をおいて再度お試しください。",
+        );
+        setStatus("error");
+        return;
+      }
+
+      // 参加したグループをホームで表示させる
+      if (typeof window !== "undefined") {
+        localStorage.setItem(SELECTED_GROUP_KEY, groupId);
+      }
+      setStatus("success");
+      setTimeout(() => router.push("/"), 1500);
     }
     acceptInvite();
   }, [token, router]);
@@ -49,7 +72,7 @@ export default function InvitePage() {
       )}
       {status === "error" && (
         <p className="text-red-500">
-          エラーが発生しました。リンクを確認してください。
+          {errorMessage ?? "エラーが発生しました。リンクを確認してください。"}
         </p>
       )}
     </div>
