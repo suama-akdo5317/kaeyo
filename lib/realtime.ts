@@ -5,8 +5,9 @@ export function subscribeToGroupChanges(
   groupId: string,
   onItemChange: () => void,
   onCategoryChange: () => void,
+  onGroupChange?: () => void,
 ) {
-  const channel = supabase
+  let channel = supabase
     .channel(`group:${groupId}`)
     .on(
       "postgres_changes",
@@ -27,8 +28,23 @@ export function subscribeToGroupChanges(
         filter: `group_id=eq.${groupId}`,
       },
       () => onCategoryChange(),
-    )
-    .subscribe();
+    );
+
+  // グループ名などの変更を他メンバーへ反映する（呼び出し側が必要なときのみ）。
+  if (onGroupChange) {
+    channel = channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "groups",
+        filter: `id=eq.${groupId}`,
+      },
+      () => onGroupChange(),
+    );
+  }
+
+  channel.subscribe();
 
   return () => {
     supabase.removeChannel(channel);

@@ -15,7 +15,7 @@ import {
   addCategory,
   seedDefaultCategories,
 } from "@/lib/category";
-import { getMyGroups, createGroup } from "@/lib/group";
+import { getMyGroups, createGroup, SELECTED_GROUP_KEY } from "@/lib/group";
 import { ItemInput } from "@/components/ItemInput";
 import { CategorySection } from "@/components/CategorySection";
 import { HistoryPanel } from "@/components/HistoryPanel";
@@ -23,8 +23,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { GroupSwitcher } from "@/components/GroupSwitcher";
 import { subscribeToGroupChanges } from "@/lib/realtime";
 import type { Category, Item, ItemHistory, Group } from "@/lib/types";
-
-const SELECTED_GROUP_KEY = "kaeyo:selectedGroupId";
 
 const BrandIcon = ({ size = 22 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
@@ -133,6 +131,15 @@ export default function MainPage() {
       () =>
         getCategories(supabase, group.id)
           .then(setCategories)
+          .catch(() => {}),
+      // 他メンバーによるリスト名変更を反映する
+      () =>
+        getMyGroups(supabase)
+          .then((myGroups) => {
+            setGroups(myGroups);
+            const updated = myGroups.find((x) => x.id === group.id);
+            if (updated) setGroup(updated);
+          })
           .catch(() => {}),
     );
   }, [group]); // eslint-disable-line react-hooks/exhaustive-deps
