@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// 選択中グループの localStorage キー。メイン画面と設定画面で共有する。
+export const SELECTED_GROUP_KEY = "kaeyo:selectedGroupId";
+
 export async function createGroup(supabase: SupabaseClient, name: string) {
   // グループ作成と作成者の owner 登録は RPC（SECURITY DEFINER）で
   // アトミックに行う。クライアントからの INSERT + returning では
@@ -15,6 +18,20 @@ export async function getMyGroups(supabase: SupabaseClient) {
   const { data, error } = await supabase.from("groups").select("*");
   if (error) throw new Error(error.message);
   return data;
+}
+
+// グループ名を更新する。RLS ポリシー（003 マイグレーション）により
+// owner/member を問わずメンバーであれば UPDATE できる。
+export async function updateGroup(
+  supabase: SupabaseClient,
+  groupId: string,
+  name: string,
+) {
+  const { error } = await supabase
+    .from("groups")
+    .update({ name })
+    .eq("id", groupId);
+  if (error) throw new Error(error.message);
 }
 
 // 標準 Base64 には URL で問題になる文字（+ / =）が含まれるため、

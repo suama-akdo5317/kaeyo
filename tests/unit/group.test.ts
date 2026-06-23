@@ -2,6 +2,7 @@ import { vi } from "vitest";
 import {
   createGroup,
   getMyGroups,
+  updateGroup,
   generateInviteToken,
   decodeInviteToken,
 } from "@/lib/group";
@@ -26,6 +27,28 @@ test("グループを作成できる（RPC create_group_with_owner を呼ぶ）"
 test("グループ一覧を取得できる", async () => {
   const groups = await getMyGroups(mockSupabase);
   expect(groups).toHaveLength(1);
+});
+
+test("グループ名を更新できる", async () => {
+  const eq = vi.fn().mockResolvedValue({ error: null });
+  const update = vi.fn().mockReturnValue({ eq });
+  const supabase = { from: vi.fn().mockReturnValue({ update }) } as any;
+
+  await updateGroup(supabase, "g1", "新しい名前");
+
+  expect(supabase.from).toHaveBeenCalledWith("groups");
+  expect(update).toHaveBeenCalledWith({ name: "新しい名前" });
+  expect(eq).toHaveBeenCalledWith("id", "g1");
+});
+
+test("グループ名更新でエラーが返ると例外を投げる", async () => {
+  const eq = vi.fn().mockResolvedValue({ error: { message: "更新失敗" } });
+  const update = vi.fn().mockReturnValue({ eq });
+  const supabase = { from: vi.fn().mockReturnValue({ update }) } as any;
+
+  await expect(updateGroup(supabase, "g1", "新しい名前")).rejects.toThrow(
+    "更新失敗",
+  );
 });
 
 test("招待トークンを生成・デコードできる（round-trip）", async () => {
