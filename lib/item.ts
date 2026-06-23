@@ -6,7 +6,7 @@ export async function getItems(supabase: SupabaseClient, groupId: string) {
     .select("*")
     .eq("group_id", groupId)
     .order("created_at");
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -26,7 +26,7 @@ export async function addItem(
     })
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   await supabase
     .from("item_history")
@@ -44,12 +44,12 @@ export async function toggleItem(
     .from("items")
     .update({ is_active: isActive })
     .eq("id", id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function deleteItem(supabase: SupabaseClient, id: string) {
   const { error } = await supabase.from("items").delete().eq("id", id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function getItemHistory(
@@ -61,6 +61,6 @@ export async function getItemHistory(
     .select("*")
     .eq("group_id", groupId)
     .order("name");
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
