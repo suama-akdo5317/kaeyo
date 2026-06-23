@@ -16,8 +16,8 @@ vi.mock("next/navigation", () => ({
 
 test("メールとパスワードの入力フィールドが表示される", () => {
   render(<LoginPage />);
-  expect(screen.getByPlaceholderText("メールアドレス")).toBeInTheDocument();
-  expect(screen.getByPlaceholderText("パスワード")).toBeInTheDocument();
+  expect(screen.getByPlaceholderText("you@example.com")).toBeInTheDocument();
+  expect(screen.getByPlaceholderText("••••••••")).toBeInTheDocument();
 });
 
 test("ログインボタンが表示される", () => {
