@@ -15,6 +15,7 @@ export type Category = {
   group_id: string;
   name: string;
   position: number;
+  color: string;
 };
 
 export type Item = {
