@@ -1,34 +1,20 @@
 import { vi } from "vitest";
 import { createGroup, getMyGroups } from "@/lib/group";
 
-const singleResult = { data: { id: "g1", name: "テスト家族" }, error: null };
-const listResult = { data: [{ id: "g1", name: "テスト家族" }], error: null };
+const groupRow = { id: "g1", name: "テスト家族" };
+const listResult = { data: [groupRow], error: null };
 
 const mockSupabase = {
   from: vi.fn().mockReturnThis(),
-  insert: vi.fn().mockReturnThis(),
-  select: vi.fn().mockReturnThis(),
-  single: vi.fn().mockResolvedValue(singleResult),
+  select: vi.fn().mockResolvedValue(listResult),
+  rpc: vi.fn().mockResolvedValue({ data: groupRow, error: null }),
 } as any;
 
-mockSupabase.from.mockImplementation((table: string) => {
-  if (table === "groups") {
-    return {
-      insert: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue(singleResult),
-        }),
-      }),
-      select: vi.fn().mockResolvedValue(listResult),
-    };
-  }
-  return {
-    insert: vi.fn().mockResolvedValue({ error: null }),
-  };
-});
-
-test("グループを作成できる", async () => {
-  const group = await createGroup(mockSupabase, "テスト家族", "user1");
+test("グループを作成できる（RPC create_group_with_owner を呼ぶ）", async () => {
+  const group = await createGroup(mockSupabase, "テスト家族");
+  expect(mockSupabase.rpc).toHaveBeenCalledWith("create_group_with_owner", {
+    group_name: "テスト家族",
+  });
   expect(group.name).toBe("テスト家族");
 });
 

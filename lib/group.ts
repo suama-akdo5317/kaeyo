@@ -1,28 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export async function createGroup(
-  supabase: SupabaseClient,
-  name: string,
-  userId: string,
-) {
-  const { data: group, error: groupError } = await supabase
-    .from("groups")
-    .insert({ name })
-    .select()
-    .single();
-  if (groupError) throw groupError;
-
-  const { error: memberError } = await supabase
-    .from("group_members")
-    .insert({ group_id: group.id, user_id: userId, role: "owner" });
-  if (memberError) throw memberError;
-
-  return group;
+export async function createGroup(supabase: SupabaseClient, name: string) {
+  // グループ作成と作成者の owner 登録は RPC（SECURITY DEFINER）で
+  // アトミックに行う。クライアントからの INSERT + returning では
+  // RLS の SELECT ポリシーに弾かれるため（005 マイグレーション参照）。
+  const { data, error } = await supabase.rpc("create_group_with_owner", {
+    group_name: name,
+  });
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 export async function getMyGroups(supabase: SupabaseClient) {
   const { data, error } = await supabase.from("groups").select("*");
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data;
 }
 
