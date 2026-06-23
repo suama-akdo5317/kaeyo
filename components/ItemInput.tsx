@@ -173,12 +173,12 @@ export function ItemInput({
             value={newCatName}
             onChange={(e) => setNewCatName(e.target.value)}
             placeholder="新しいタグ名"
-            className="flex-1 px-3 py-2 border-[1.5px] border-line rounded-xl text-sm bg-input focus:border-accent focus:bg-white focus:outline-none"
+            className="flex-1 min-w-0 px-3 py-2 border-[1.5px] border-line rounded-xl text-sm bg-input focus:border-accent focus:bg-white focus:outline-none"
             autoFocus
           />
           <button
             type="submit"
-            className="px-3.5 py-2 rounded-xl bg-done text-white text-sm font-bold"
+            className="flex-none whitespace-nowrap px-3.5 py-2 rounded-xl bg-done text-white text-sm font-bold"
           >
             作成
           </button>

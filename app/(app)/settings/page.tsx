@@ -149,12 +149,12 @@ export default function SettingsPage() {
               if (e.key === "Enter") handleSaveName();
             }}
             placeholder="リストの名前"
-            className="flex-1 px-3.5 py-2.5 border-[1.5px] border-line rounded-xl text-[15px] bg-input focus:border-accent focus:bg-white focus:outline-none"
+            className="flex-1 min-w-0 px-3.5 py-2.5 border-[1.5px] border-line rounded-xl text-[15px] bg-input focus:border-accent focus:bg-white focus:outline-none"
           />
           <button
             onClick={handleSaveName}
             disabled={savingName}
-            className="px-4 py-2.5 rounded-xl bg-accent text-white font-bold text-[14px] hover:bg-accent-hover transition disabled:opacity-50"
+            className="flex-none whitespace-nowrap px-4 py-2.5 rounded-xl bg-accent text-white font-bold text-[14px] hover:bg-accent-hover transition disabled:opacity-50"
           >
             保存
           </button>
@@ -218,11 +218,11 @@ export default function SettingsPage() {
               if (e.key === "Enter") handleAddCategory();
             }}
             placeholder="新しいタグ名"
-            className="flex-1 px-3.5 py-2.5 border-[1.5px] border-line rounded-xl text-[15px] bg-input focus:border-accent focus:bg-white focus:outline-none"
+            className="flex-1 min-w-0 px-3.5 py-2.5 border-[1.5px] border-line rounded-xl text-[15px] bg-input focus:border-accent focus:bg-white focus:outline-none"
           />
           <button
             onClick={handleAddCategory}
-            className="px-4 py-2.5 rounded-xl bg-accent text-white font-bold text-[14px] hover:bg-accent-hover transition"
+            className="flex-none whitespace-nowrap px-4 py-2.5 rounded-xl bg-accent text-white font-bold text-[14px] hover:bg-accent-hover transition"
           >
             追加
           </button>

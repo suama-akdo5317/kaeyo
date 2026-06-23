@@ -242,7 +242,7 @@ export default function MainPage() {
         {items.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4 items-start">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,290px),1fr))] gap-4 items-start">
             {categories.map((cat) => {
               const its = categorizedItems(cat.id);
               if (its.length === 0) return null;
