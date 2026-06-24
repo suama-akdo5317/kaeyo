@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -50,7 +50,7 @@ const BrandIcon = ({ size = 22 }: { size?: number }) => (
 );
 
 export default function MainPage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
   const [group, setGroup] = useState<Group | null>(null);
@@ -129,9 +129,10 @@ export default function MainPage() {
       supabase,
       group.id,
       () =>
-        getItems(supabase, group.id)
-          .then(setItems)
-          .catch(() => {}),
+        Promise.all([
+          getItems(supabase, group.id).then(setItems),
+          getItemHistory(supabase, group.id).then(setHistory),
+        ]).catch(() => {}),
       () =>
         getCategories(supabase, group.id)
           .then(setCategories)

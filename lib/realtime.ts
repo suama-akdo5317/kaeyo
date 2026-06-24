@@ -44,7 +44,11 @@ export function subscribeToGroupChanges(
     );
   }
 
-  channel.subscribe();
+  channel.subscribe((status, err) => {
+    if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+      console.error("[realtime] subscription failed:", status, err);
+    }
+  });
 
   return () => {
     supabase.removeChannel(channel);
