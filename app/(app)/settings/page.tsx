@@ -3,9 +3,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { getCategories, addCategory, deleteCategory } from "@/lib/category";
+import {
+  getCategories,
+  addCategory,
+  deleteCategory,
+  seedDefaultCategories,
+} from "@/lib/category";
 import {
   getMyGroups,
+  createGroup,
   generateInviteToken,
   updateGroup,
   SELECTED_GROUP_KEY,
@@ -26,6 +32,10 @@ export default function SettingsPage() {
   const [groupName, setGroupName] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
+  // 新しいリスト作成用の状態。
+  const [newGroupName, setNewGroupName] = useState("");
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [createGroupError, setCreateGroupError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCatName, setNewCatName] = useState("");
   const [newCatColor, setNewCatColor] = useState<string>(CATEGORY_COLORS[0]);
@@ -99,6 +109,29 @@ export default function SettingsPage() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSavingName(false);
+    }
+  };
+
+  // 新しいリストを作成し、既定タグを付与してそのリストへ編集対象を切り替える。
+  const handleCreateGroup = async () => {
+    const name = newGroupName.trim();
+    if (!name) return;
+    setCreateGroupError(null);
+    setCreatingGroup(true);
+    try {
+      const g = await createGroup(supabase, name);
+      await seedDefaultCategories(supabase, g.id);
+      setGroups((prev) => [...prev, g]);
+      // メイン画面が新リストを開けるよう選択を保存する。
+      if (typeof window !== "undefined") {
+        localStorage.setItem(SELECTED_GROUP_KEY, g.id);
+      }
+      await selectGroup(g);
+      setNewGroupName("");
+    } catch (err) {
+      setCreateGroupError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCreatingGroup(false);
     }
   };
 
@@ -379,6 +412,37 @@ export default function SettingsPage() {
         )}
         {passwordError && (
           <p className="text-[#d0594f] text-sm mt-2">{passwordError}</p>
+        )}
+      </section>
+
+      <section className="bg-card border border-line rounded-[18px] p-[18px] shadow-[0_12px_32px_-22px_rgba(80,50,20,.35)]">
+        <h2 className="font-display font-bold text-[15px] mb-3">
+          新しいリストを作成
+        </h2>
+        <div className="flex gap-2">
+          <input
+            value={newGroupName}
+            onChange={(e) => {
+              setNewGroupName(e.target.value);
+              setCreateGroupError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleCreateGroup();
+            }}
+            placeholder="リストの名前"
+            className="flex-1 min-w-0 px-3.5 py-2.5 border-[1.5px] border-line rounded-xl text-[15px] bg-input focus:border-accent focus:bg-white focus:outline-none"
+            disabled={creatingGroup}
+          />
+          <button
+            onClick={handleCreateGroup}
+            disabled={creatingGroup || !newGroupName.trim()}
+            className="flex-none whitespace-nowrap px-4 py-2.5 rounded-xl bg-accent text-white font-bold text-[14px] hover:bg-accent-hover transition disabled:opacity-50"
+          >
+            {creatingGroup ? "作成中..." : "作成"}
+          </button>
+        </div>
+        {createGroupError && (
+          <p className="text-[#d0594f] text-sm mt-2">{createGroupError}</p>
         )}
       </section>
 
