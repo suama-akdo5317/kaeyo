@@ -25,6 +25,12 @@ export default function SettingsPage() {
   const [newCatColor, setNewCatColor] = useState<string>(CATEGORY_COLORS[0]);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordSaved, setPasswordSaved] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   // 選択したグループを編集対象に切り替える（名前入力・タグ一覧も連動）。
   const selectGroup = async (g: Group) => {
@@ -37,6 +43,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function load() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setEmail(user?.email ?? "");
       const myGroups = await getMyGroups(supabase);
       if (!myGroups || myGroups.length === 0) return;
       setGroups(myGroups);
@@ -102,6 +112,34 @@ export default function SettingsPage() {
   const handleDeleteCategory = async (id: string) => {
     await deleteCategory(supabase, id);
     setCategories((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError(null);
+    setPasswordSaved(false);
+    if (newPassword.length < 6) {
+      setPasswordError("パスワードは6文字以上で入力してください");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("パスワードが一致しません");
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (updateError) {
+        setPasswordError(updateError.message);
+        return;
+      }
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordSaved(true);
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   const handleGenerateInvite = async () => {
@@ -251,6 +289,65 @@ export default function SettingsPage() {
               コピー
             </button>
           </div>
+        )}
+      </section>
+
+      <section className="bg-card border border-line rounded-[18px] p-[18px] shadow-[0_12px_32px_-22px_rgba(80,50,20,.35)]">
+        <h2 className="font-display font-bold text-[15px] mb-3">
+          登録メールアドレス
+        </h2>
+        <div className="bg-input border border-line rounded-xl px-3.5 py-2.5 text-[15px] break-all">
+          {email || "—"}
+        </div>
+      </section>
+
+      <section className="bg-card border border-line rounded-[18px] p-[18px] shadow-[0_12px_32px_-22px_rgba(80,50,20,.35)]">
+        <h2 className="font-display font-bold text-[15px] mb-3">
+          パスワード変更
+        </h2>
+        <label className="block text-[12px] font-bold text-muted-strong mb-1.5">
+          新しいパスワード
+        </label>
+        <input
+          type="password"
+          placeholder="6文字以上"
+          value={newPassword}
+          onChange={(e) => {
+            setNewPassword(e.target.value);
+            setPasswordSaved(false);
+          }}
+          className="w-full px-3.5 py-[13px] border-[1.5px] border-line rounded-xl text-[15px] bg-input mb-3.5 transition focus:border-accent focus:bg-white focus:outline-none"
+          disabled={savingPassword}
+        />
+        <label className="block text-[12px] font-bold text-muted-strong mb-1.5">
+          パスワード（確認）
+        </label>
+        <input
+          type="password"
+          placeholder="もう一度入力"
+          value={confirmPassword}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            setPasswordSaved(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleChangePassword();
+          }}
+          className="w-full px-3.5 py-[13px] border-[1.5px] border-line rounded-xl text-[15px] bg-input mb-3.5 transition focus:border-accent focus:bg-white focus:outline-none"
+          disabled={savingPassword}
+        />
+        <button
+          onClick={handleChangePassword}
+          disabled={savingPassword}
+          className="px-4 py-2.5 rounded-xl bg-accent text-white font-bold text-[14px] hover:bg-accent-hover transition disabled:opacity-50"
+        >
+          {savingPassword ? "処理中..." : "変更"}
+        </button>
+        {passwordSaved && (
+          <p className="text-done text-sm mt-2">変更しました</p>
+        )}
+        {passwordError && (
+          <p className="text-[#d0594f] text-sm mt-2">{passwordError}</p>
         )}
       </section>
     </div>
