@@ -1,15 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-
-export default async function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+// 認証ガードはルート直下では行わない（未ログインはルートでデモを表示するため）。
+// 保護が必要な画面（/settings 等）は各ルートのレイアウトでガードする。
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
