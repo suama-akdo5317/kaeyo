@@ -446,6 +446,19 @@ export default function SettingsPage() {
         )}
       </section>
 
+      <section className="bg-card border border-line rounded-[18px] p-[18px] shadow-[0_12px_32px_-22px_rgba(80,50,20,.35)]">
+        <h2 className="font-display font-bold text-[15px] mb-3">ログアウト</h2>
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            router.push("/login");
+          }}
+          className="px-4 py-2.5 rounded-xl border-[1.5px] border-[#e3d9c7] text-muted-strong font-bold text-[14px] transition hover:bg-[#f1e9da]"
+        >
+          ログアウト
+        </button>
+      </section>
+
       <section className="bg-card border border-[#e7c3bd] rounded-[18px] p-[18px] shadow-[0_12px_32px_-22px_rgba(80,50,20,.35)]">
         <h2 className="font-display font-bold text-[15px] mb-3 text-[#c4493e]">
           アカウント削除

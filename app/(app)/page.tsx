@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   getItems,
@@ -24,6 +23,22 @@ import { GroupSwitcher } from "@/components/GroupSwitcher";
 import { MainSkeleton } from "@/components/MainSkeleton";
 import { subscribeToGroupChanges } from "@/lib/realtime";
 import type { Category, Item, ItemHistory, Group } from "@/lib/types";
+
+const SettingsIcon = ({ size = 20 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+  </svg>
+);
 
 const BrandIcon = ({ size = 22 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
@@ -51,7 +66,6 @@ const BrandIcon = ({ size = 22 }: { size?: number }) => (
 
 export default function MainPage() {
   const supabase = useMemo(() => createClient(), []);
-  const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
   const [group, setGroup] = useState<Group | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -201,20 +215,12 @@ export default function MainPage() {
             />
             <Link
               href="/settings"
-              className="text-muted-strong opacity-80 hover:opacity-100 text-xl leading-none"
+              className="flex items-center justify-center w-9 h-9 border-[1.5px] border-[#e3d9c7] rounded-[10px] text-muted-strong hover:bg-[#f1e9da] transition"
               aria-label="設定"
+              title="設定"
             >
-              ⚙
+              <SettingsIcon />
             </Link>
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.push("/login");
-              }}
-              className="px-[13px] py-[7px] border-[1.5px] border-[#e3d9c7] rounded-[10px] text-muted-strong text-[13px] font-medium hover:bg-[#f1e9da] transition"
-            >
-              ログアウト
-            </button>
           </div>
         </div>
       </header>
