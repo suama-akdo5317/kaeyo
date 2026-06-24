@@ -57,7 +57,6 @@ export default function MainPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [history, setHistory] = useState<ItemHistory[]>([]);
-  const [userName, setUserName] = useState("ゲスト");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -77,8 +76,6 @@ export default function MainPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (user?.email) setUserName(user.email.split("@")[0] || "ゲスト");
-
       let myGroups = await getMyGroups(supabase);
       if (!myGroups || myGroups.length === 0) {
         if (!user) return;
@@ -194,9 +191,7 @@ export default function MainPage() {
             <span className="w-9 h-9 rounded-[11px] bg-[#fbe7df] flex items-center justify-center flex-none">
               <BrandIcon />
             </span>
-            <span className="font-display font-bold text-[19px]">
-              Kaeyo
-            </span>
+            <span className="font-display font-bold text-[19px]">Kaeyo</span>
           </div>
           <div className="flex items-center gap-3">
             <GroupSwitcher
@@ -204,18 +199,6 @@ export default function MainPage() {
               currentGroupId={group?.id ?? ""}
               onChange={handleSwitchGroup}
             />
-            <div className="flex items-center gap-2">
-              {loading ? (
-                <span className="w-[30px] h-[30px] rounded-full bg-[#e3d9c7] animate-pulse flex-none" />
-              ) : (
-                <span className="w-[30px] h-[30px] rounded-full bg-accent text-white flex items-center justify-center font-bold text-[13px] flex-none">
-                  {userName.charAt(0)}
-                </span>
-              )}
-              <span className="text-[13px] text-muted-strong hidden sm:inline">
-                {loading ? "" : userName}
-              </span>
-            </div>
             <Link
               href="/settings"
               className="text-muted-strong opacity-80 hover:opacity-100 text-xl leading-none"
