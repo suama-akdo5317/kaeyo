@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getCategories, addCategory, deleteCategory } from "@/lib/category";
 import {
@@ -9,12 +10,17 @@ import {
   updateGroup,
   SELECTED_GROUP_KEY,
 } from "@/lib/group";
+import { deleteMyAccount } from "@/lib/account";
 import { CATEGORY_COLORS, DEFAULT_CATEGORY_COLOR } from "@/lib/categoryColors";
 import { GroupSwitcher } from "@/components/GroupSwitcher";
 import type { Category, Group } from "@/lib/types";
 
+// アカウント削除の確認に入力させる文字列。一致したときのみ削除を有効化する。
+const DELETE_CONFIRM_WORD = "削除";
+
 export default function SettingsPage() {
   const supabase = createClient();
+  const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
   const [group, setGroup] = useState<Group | null>(null);
   const [groupName, setGroupName] = useState("");
@@ -31,6 +37,11 @@ export default function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordSaved, setPasswordSaved] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  // アカウント削除用の状態。
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // 選択したグループを編集対象に切り替える（名前入力・タグ一覧も連動）。
   const selectGroup = async (g: Group) => {
@@ -146,6 +157,26 @@ export default function SettingsPage() {
     if (!group) return;
     const token = await generateInviteToken(group.id);
     setInviteUrl(`${window.location.origin}/invite/${token}`);
+  };
+
+  const cancelDeleteAccount = () => {
+    setConfirmingDelete(false);
+    setDeleteConfirmText("");
+    setDeleteError(null);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== DELETE_CONFIRM_WORD) return;
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await deleteMyAccount(supabase);
+      await supabase.auth.signOut();
+      router.push("/login");
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : String(err));
+      setDeleting(false);
+    }
   };
 
   return (
@@ -348,6 +379,58 @@ export default function SettingsPage() {
         )}
         {passwordError && (
           <p className="text-[#d0594f] text-sm mt-2">{passwordError}</p>
+        )}
+      </section>
+
+      <section className="bg-card border border-[#e7c3bd] rounded-[18px] p-[18px] shadow-[0_12px_32px_-22px_rgba(80,50,20,.35)]">
+        <h2 className="font-display font-bold text-[15px] mb-3 text-[#c4493e]">
+          アカウント削除
+        </h2>
+        {!confirmingDelete ? (
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            className="px-4 py-2.5 rounded-xl border-[1.5px] border-[#d0594f] text-[#d0594f] font-bold text-[14px] transition hover:bg-[#d0594f] hover:text-white"
+          >
+            アカウントを削除
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-[13px] text-muted-strong leading-relaxed">
+              アカウントを削除すると元に戻せません。あなただけが参加している
+              リストとその中身（アイテム・タグ）もすべて削除されます。他のメンバーが
+              いるリストはそのまま残ります。
+            </p>
+            <p className="text-[13px] text-muted-strong">
+              確認のため{" "}
+              <span className="font-bold">{DELETE_CONFIRM_WORD}</span>{" "}
+              と入力してください。
+            </p>
+            <input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder={DELETE_CONFIRM_WORD}
+              className="w-full px-3.5 py-2.5 border-[1.5px] border-line rounded-xl text-[15px] bg-input focus:border-[#d0594f] focus:bg-white focus:outline-none"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={cancelDeleteAccount}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 rounded-xl border-[1.5px] border-line bg-input text-[14px] font-bold transition hover:bg-[#f1e9da] disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting || deleteConfirmText !== DELETE_CONFIRM_WORD}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[#d0594f] text-white font-bold text-[14px] transition hover:opacity-90 disabled:opacity-40"
+              >
+                {deleting ? "削除中..." : "削除する"}
+              </button>
+            </div>
+            {deleteError && (
+              <p className="text-[#d0594f] text-sm">{deleteError}</p>
+            )}
+          </div>
         )}
       </section>
     </div>
