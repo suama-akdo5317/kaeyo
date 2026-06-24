@@ -115,7 +115,7 @@ function LoginForm() {
       ? "はじめましょう。"
       : mode === "forgot"
         ? "登録メールに再設定リンクを送ります。"
-        : "買うものを、わすれない。";
+        : "どうせ店入ったら忘れるんでしょ？";
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
@@ -149,7 +149,7 @@ function LoginForm() {
           </span>
           <div className="text-center">
             <div className="font-display font-bold text-[25px] tracking-[.04em]">
-              {mode === "login" ? "かいものメモ" : title}
+              {mode === "login" ? "Kaeyo" : title}
             </div>
             <div className="text-[13px] text-muted mt-1.5">{subtitle}</div>
           </div>

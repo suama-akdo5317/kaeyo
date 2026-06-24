@@ -15,8 +15,8 @@ const zenMaru = Zen_Maru_Gothic({
 });
 
 export const metadata: Metadata = {
-  title: "かいものメモ",
-  description: "買うものを、わすれない。",
+  title: "Kaeyo",
+  description: "どうせ店入ったら忘れるんでしょ？",
 };
 
 export default function RootLayout({

@@ -195,7 +195,7 @@ export default function MainPage() {
               <BrandIcon />
             </span>
             <span className="font-display font-bold text-[19px]">
-              かいものメモ
+              Kaeyo
             </span>
           </div>
           <div className="flex items-center gap-3">
