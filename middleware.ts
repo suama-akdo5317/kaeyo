@@ -40,8 +40,10 @@ export async function middleware(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith("/login");
   const isInvitePage = request.nextUrl.pathname.startsWith("/invite");
   const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/callback");
+  // ルートドメインは未ログインでもデモ表示のため到達を許可する
+  const isRoot = request.nextUrl.pathname === "/";
 
-  if (!user && !isAuthPage && !isInvitePage && !isAuthCallback) {
+  if (!user && !isAuthPage && !isInvitePage && !isAuthCallback && !isRoot) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   if (user && isAuthPage) {
